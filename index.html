@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            transition: background 0.5s ease;
+        }
+
+        .location {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .temperature {
+            font-size: 3rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .description {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+
+        #weather-icon {
+            font-size: 4rem;
+            margin: 1rem 0;
+            color: white;
+            display: block;
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Weather backgrounds */
+        .sunny { background: linear-gradient(to right, #ff9966, #ff5e62); }
+        .rainy { background: linear-gradient(to right, #36d1dc, #5b86e5); }
+        .snowy { background: linear-gradient(to right, #e6e9f0, #eef1f5); }
+        .cloudy { background: linear-gradient(to right, #bdc3c7, #2c3e50); }
+        .thunderstorm { background: linear-gradient(to right, #4b6cb7, #182848); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="location" class="location">Loading...</div>
+        <div id="temperature" class="temperature"></div>
+        <div id="description" class="description"></div>
+        <i id="weather-icon" class="fas"></i>
+        <button id="toggle-unit" class="toggle-btn">Toggle °C/°F</button>
+    </div>
+
+    <script>
+        let currentTempC, currentTempF, isCelsius = true;
+        const container = document.querySelector('.container');
+        const locationElement = document.getElementById('location');
+        const tempElement = document.getElementById('temperature');
+        const descriptionElement = document.getElementById('description');
+        const iconElement = document.getElementById('weather-icon');
+        const toggleBtn = document.getElementById('toggle-unit');
+
+        // Get user's location and fetch weather
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // **FIXED API CALL**
+                    const response = await fetch(`https://weather-proxy.freecodecamp.rocks/api/current?lat=${lat}&lon=${lon}`);
+                    const data = await response.json();
+                    
+                    updateWeather(data);
+                } catch (err) {
+                    alert('Error fetching weather data');
+                }
+            },
+            error => alert('Please enable geolocation access')
+        );
+
+        function updateWeather(data) {
+            const { name: city, sys: { country }, weather, main: { temp } } = data;
+            currentTempC = Math.round(temp);
+            currentTempF = Math.round(currentTempC * 9/5 + 32);
+            
+            locationElement.textContent = `${city}, ${country}`;
+            descriptionElement.textContent = weather[0].description;
+            tempElement.textContent = `${currentTempC} °C`;
+            
+            // Update weather class and icon
+            container.className = `container ${getWeatherClass(weather[0].main)}`;
+            iconElement.className = `fas ${getIconClass(weather[0].main)}`;
+        }
+
+        function getWeatherClass(weatherMain) {
+            switch(weatherMain.toLowerCase()) {
+                case 'clear': return 'sunny';
+                case 'rain': return 'rainy';
+                case 'snow': return 'snowy';
+                case 'clouds': return 'cloudy';
+                case 'thunderstorm': return 'thunderstorm';
+                default: return '';
+            }
+        }
+
+        function getIconClass(weatherMain) {
+            switch(weatherMain) {
+                case 'Thunderstorm': return 'fa-bolt';
+                case 'Drizzle':
+                case 'Rain': return 'fa-cloud-showers-heavy';
+                case 'Snow': return 'fa-snowflake';
+                case 'Clear': return 'fa-sun';
+                case 'Clouds': return 'fa-cloud';
+                default: return 'fa-question';
+            }
+        }
+
+        // Toggle temperature unit
+        toggleBtn.addEventListener('click', () => {
+            isCelsius = !isCelsius;
+            const temp = isCelsius ? currentTempC : currentTempF;
+            tempElement.textContent = `${temp} ${isCelsius ? '°C' : '°F'}`;
+        });
+    </script>
+</body>
+</html>
